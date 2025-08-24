@@ -1,9 +1,9 @@
 const Joi = require("joi");
-const db = require("../config/db"); 
+const db = require("../config/db");
 
 const schoolSchema = Joi.object({
   name: Joi.string().min(3).max(100).required(),
-  address: Joi.string().allow("").max(255), 
+  address: Joi.string().allow("").max(255),
   latitude: Joi.number().precision(6).required(),
   longitude: Joi.number().precision(6).required(),
 });
@@ -61,9 +61,35 @@ exports.listSchools = (req, res) => {
   });
 };
 
+exports.updateSchool = (req, res) => {
+  const { id, name } = req.body;
+
+  if (!id) {
+    return res.status(400).json({ error: "School ID is required" });
+  }
+  if (!name) {
+    return res.status(400).json({ error: "School name is required" });
+  }
+
+  const std = `UPDATE schools SET name = ? WHERE id = ?`;
+
+  db.query(std, [name, id], (err, result) => {
+    if (err) {
+      console.error("❌ DB Error:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "No school found with that ID" });
+    }
+
+    res.json({ message: "✅ School updated successfully!" });
+  });
+};
+
 exports.deleteSchool = (req, res) => {
   console.log(req.params)
-  const { id } = req.params; // Extract id from URL params
+  const { id } = req.params;
   if (!id) {
     return res.status(400).json({ error: "School ID is required" });
   }
@@ -80,18 +106,3 @@ exports.deleteSchool = (req, res) => {
   });
 };
 
-exports.updateSchool = (req,res) => {
-  const {id,name} = req.body;
-  if (!id) {
-    return res.status(400).json({ error: "School ID is required" });
-  }
-  const std =`ALTER TABLE schools MODIFY COLUMN name VARCHAR(200)`;
-  db.query(std,[id,name], (err,result) => {
-    if (err) return res.status(500).json({ error: "Database error" });
-
-    if(result.name === 0){
-      return res.status(404).json({error:"no data found"})
-    }
-    res.json({message:"school data updated!"})
-  });
-}
